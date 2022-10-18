@@ -1,12 +1,24 @@
-use crate::chess::*;
 use crate::baked_moves::*;
+use crate::chess::*;
 
 /// Generates all pseudo legal moves for a given piece on the given board.
 /// panics when piece.kind() is neither of eight expected values
-fn gen_pseudo_legal_for_piece(piece: &Piece, color: u16, pos: usize, board: &Board, moves: &mut Vec<Move>) {
+fn gen_pseudo_legal_for_piece(
+    piece: &Piece,
+    color: u16,
+    pos: usize,
+    board: &Board,
+    moves: &mut Vec<Move>,
+) {
     /// code to generate pawn moves in both ways
+    /// panicks if the supposed pawn is in either back rank of the board
     macro_rules! pawn_gen {
         ($offset_op:tt, $rank:path) => {
+            assert!(
+                !(Board::WHITE_BACK_RANK.contains(&pos)
+                    || Board::BLACK_BACK_RANK.contains(&pos)),
+                    "a pawn is in a back rank!"
+                );
             // single advance
             let mut target = pos $offset_op Board::NUM_FILES as usize;
             if board[target] == Piece::NO_PIECE {
@@ -35,6 +47,7 @@ fn gen_pseudo_legal_for_piece(piece: &Piece, color: u16, pos: usize, board: &Boa
                         moves.push(Move::new_ab(pos, cap));
                 }
             }
+            // todo: promotions
         }
     }
     match piece.kind() {
@@ -53,7 +66,9 @@ fn gen_pseudo_legal_for_piece(piece: &Piece, color: u16, pos: usize, board: &Boa
             }
         }
         Piece::BISHOP => {}
-        Piece::ROOK => {}
+        Piece::ROOK => {
+            gen_rook_moves(pos, color, board, moves);
+        }
         Piece::QUEEN => {}
         Piece::KING => {}
         kind => {
@@ -74,16 +89,25 @@ impl Board {
     }
 }
 
-fn gen_rook_moves(pos: usize, my_color: u16, board: &Board, moves: Vec<Move>) {
+fn gen_rook_moves(pos: usize, my_color: u16, board: &Board, moves: &mut Vec<Move>) {
     let rank = Board::rank_of(pos);
     let file = Board::file_of(pos);
 
     // moves going "upwards"
-    for i in 0..(Board::NUM_RANKS - rank) {
-        let target = pos + i * Board::NUM_FILES;
+    for i in 0..(Board::NUM_RANKS as usize - rank) {
+        let target = Board::square_index(file, rank + i);
+        if board[target].color() != my_color {
+            moves.push(Move::new_ab(pos, target));
+        } else {
+            break;
+        }
+    }
+    // moves going "downwards"
+    for i in 0..rank {
+        let target = Board::square_index(file, rank);
         if board[target].color() != my_color {
             moves.push(Move::new_ab(pos, target));
         }
     }
+    // moves going "right"
 }
-

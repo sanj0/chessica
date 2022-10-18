@@ -30,12 +30,15 @@ pub enum CastleKind {
 /// or leaves its "lane" entirely.
 #[derive(Debug, Clone)]
 pub enum Move {
-    /// A piece moves from array index a to array index b
+    /// A "normal" from square a to square b
     AB { a: usize, b: usize },
-    /// A castle move
+    /// A castle move with the given kind
     Castle { kind: CastleKind },
-    /// An en passant capture
+    /// An en passant capture where the pawn moves from a to b
+    /// and captures the piece on the given square
     EnPassant { a: usize, b: usize, capture: usize },
+    /// A promotion move from a to b into the given target piece
+    Promotion { a: usize, b: usize, target: Piece },
 }
 
 impl Board {
@@ -81,6 +84,10 @@ impl Board {
 
     pub fn file_of(pos: usize) -> usize {
         pos % 8
+    }
+
+    pub fn square_index(file: usize, rank: usize) -> usize {
+        rank * 8 + file
     }
 
     pub fn parse_fen(fen: &str) -> Result<Self, String> {
@@ -148,7 +155,11 @@ impl Board {
             }
         };
 
-        Ok(Self { pieces, turn, en_passant_target: None })
+        Ok(Self {
+            pieces,
+            turn,
+            en_passant_target: None,
+        })
     }
 }
 
@@ -257,25 +268,32 @@ impl Move {
     }
 
     pub fn play(&self, board: &mut Board) {
+        macro_rules! ab_move {
+            ($a:ident, $b:ident) => {
+                let a = *$a;
+                board[*$b] = board[a];
+                board[a] = Piece::NO_PIECE;
+            };
+        }
         match self {
             Self::AB { a, b } => {
-                let a = *a;
-                board[*b] = board[a];
-                board[a] = Piece::NONE.into();
+                ab_move!(a, b);
             }
             Self::Castle { kind } => kind.play(board),
             Self::EnPassant { a, b, capture } => {
-                let a = *a;
-                board[*b] = board[a];
-                board[a] = Piece::NONE.into();
-                board[*capture] = Piece::NONE.into();
+                ab_move!(a, b);
+                board[*capture] = Piece::NO_PIECE;
+            }
+            Self::Promotion { a, b, target } => {
+                board[*a] = Piece::NO_PIECE;
+                board[*b] = *target;
             }
         }
     }
 
     pub fn capture(&self, board: &Board) -> Option<Piece> {
         match self {
-            Self::AB { a: _, b } => {
+            Self::AB { a: _, b } | Self::Promotion { a: _, b, target: _ } => {
                 let cap = board[*b];
                 if cap.has(Piece::NONE) {
                     None
@@ -339,4 +357,3 @@ impl From<Piece> for u16 {
         p.0
     }
 }
-
