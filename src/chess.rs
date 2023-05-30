@@ -1,6 +1,7 @@
 use crate::fen;
 use std::fmt::{Display, Formatter};
 
+#[derive(Clone, Debug)]
 pub struct Board {
     /// the pieces on the board, starting at rank 8 file a, going to rank 8 file h
     /// and ending eventually at rank 1 file h
@@ -8,17 +9,22 @@ pub struct Board {
     /// who's turn is it?
     /// Piece::BLACK or Piece::WHITE
     turn: u16,
+    castle_rights: u8,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Piece(u16);
 
 impl Board {
     pub const NUM_FILES: u32 = 8; // = "width"
     pub const NUM_RANKS: u32 = 8; // = "height"
 
-    pub fn new(pieces: [Piece; 64], turn: u16) -> Self {
-        Self { pieces, turn }
+    pub fn new(pieces: [Piece; 64], turn: u16, castle_rights: u8) -> Self {
+        Self {
+            pieces,
+            turn,
+            castle_rights,
+        }
     }
 }
 

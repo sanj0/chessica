@@ -1,4 +1,5 @@
 use crate::chess::{Board, Piece};
+use crate::r#move::CastleType;
 
 pub const FEN_WHITE: char = 'w';
 pub const FEN_BLACK: char = 'b';
@@ -18,6 +19,7 @@ pub const FEN_BLACK_KING: char = 'k';
 
 pub const STARTING_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+// only requires position and turn fields, default if the rest is missing
 pub fn parse_board(fen: &str) -> Result<Board, String> {
     // would only need to split at spaces per definition but what gives
     let mut fields = fen.split_whitespace();
@@ -27,6 +29,8 @@ pub fn parse_board(fen: &str) -> Result<Board, String> {
     let turn_field = fields
         .next()
         .ok_or_else(|| String::from("fen string expected to have at least first two fields"))?;
+    let castle_field = fields.next();
+
     let mut pieces = [Piece::from(Piece::NONE); 64];
     let mut index: u32 = 0;
     for c in pos_field.chars() {
@@ -56,32 +60,74 @@ pub fn parse_board(fen: &str) -> Result<Board, String> {
             }
             FEN_NEW_RANK => {
                 if index % 8 != 0 {
-                    return Err(format!("rank not yet done at rank delimiter {c}"));
+                    return Err(format!("rank not yet done at rank delimiter '{c}'"));
                 }
                 continue;
             }
-            _ => return Err(format!("unexpected character {c} in position field!")),
+            _ => return Err(format!("unexpected character '{c}' in position field!")),
         });
         index += 1;
     }
-    if turn_field.len() != 1 {
+
+    let turn = parse_turn_field(turn_field)?;
+    let castle_rights = parse_castle_field(castle_field)?;
+
+    Ok(Board::new(pieces, turn, castle_rights))
+}
+
+fn parse_turn_field(field: &str) -> Result<u16, String> {
+    if field.len() != 1 {
         return Err(format!(
-            "illegal second (turn) field '{turn_field}'; one of {} or {} expected",
+            "illegal second (turn) field '{field}'; one of {} or {} expected",
             FEN_WHITE, FEN_BLACK
         ));
     }
-    let turn = match turn_field.chars().next().unwrap() {
+    Ok(match field.chars().next().unwrap() {
         FEN_WHITE => Piece::WHITE,
         FEN_BLACK => Piece::BLACK,
         _ => {
             return Err(format!(
-                "expected {} or {} as second field!",
+                "expected '{}' or '{}' as second field!",
                 FEN_WHITE, FEN_BLACK
             ))
         }
-    };
+    })
+}
 
-    Ok(Board::new(pieces, turn))
+fn parse_castle_field(field: Option<&str>) -> Result<u8, String> {
+    if field.is_none() {
+        return Ok(
+            CastleType::BIT_BLACK_LONG
+            | CastleType::BIT_BLACK_SHORT
+            | CastleType::BIT_WHITE_LONG
+            | CastleType::BIT_WHITE_SHORT);
+    }
+    let field = field.unwrap();
+    let mut chars = field.chars().peekable();
+    if field.len() == 1 && *chars.peek().unwrap() == '-' {
+        return Ok(0);
+    }
+    let mut result = 0;
+    macro_rules! add_once {
+        ($bit:path, $c:ident) => {{
+            if result & $bit == $bit {
+                Err(format!("fen contains castle right '{}' twice!", $c))
+            } else {
+                result = result | $bit;
+                Ok(())
+            }
+        }}
+    }
+    for c in chars {
+        match c {
+            FEN_BLACK_QUEEN => add_once!(CastleType::BIT_BLACK_LONG, c)?,
+            FEN_BLACK_KING => add_once!(CastleType::BIT_BLACK_SHORT, c)?,
+            FEN_WHITE_QUEEN => add_once!(CastleType::BIT_WHITE_LONG, c)?,
+            FEN_WHITE_KING => add_once!(CastleType::BIT_WHITE_SHORT, c)?,
+            _ => return Err(format!("unexpected character '{c}' in castle rights field"))
+        }
+    }
+    Ok(result)
 }
 
 pub fn fen_char(p: &Piece) -> char {
