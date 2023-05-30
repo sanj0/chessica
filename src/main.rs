@@ -1,9 +1,8 @@
 pub mod chess;
-
-use chess::{Board, Piece};
+pub mod fen;
 
 fn main() -> Result<(), String> {
-    let board = Board::parse_fen(Board::STARTING_FEN)?;
+    let board = fen::parse_board(fen::STARTING_FEN)?;
     println!("{board}");
     Ok(())
 }
