@@ -31,9 +31,17 @@ pub fn parse_board(fen: &str) -> Result<Board, String> {
         .ok_or_else(|| String::from("fen string expected to have at least first two fields"))?;
     let castle_field = fields.next();
 
+    let pieces = parse_position(pos_field)?;
+    let turn = parse_turn_field(turn_field)?;
+    let castle_rights = parse_castle_field(castle_field)?;
+
+    Ok(Board::new(pieces, turn, castle_rights))
+}
+
+fn parse_position(field: &str) -> Result<[Piece; 64], String> {
     let mut pieces = [Piece::from(Piece::NONE); 64];
     let mut index: u32 = 0;
-    for c in pos_field.chars() {
+    for c in field.chars() {
         pieces[index as usize] = Piece::from(match c {
             FEN_WHITE_PAWN => Piece::WHITE | Piece::PAWN,
             FEN_WHITE_KNIGHT => Piece::WHITE | Piece::KNIGHT,
@@ -68,11 +76,7 @@ pub fn parse_board(fen: &str) -> Result<Board, String> {
         });
         index += 1;
     }
-
-    let turn = parse_turn_field(turn_field)?;
-    let castle_rights = parse_castle_field(castle_field)?;
-
-    Ok(Board::new(pieces, turn, castle_rights))
+    Ok(pieces)
 }
 
 fn parse_turn_field(field: &str) -> Result<u16, String> {

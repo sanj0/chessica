@@ -1,4 +1,3 @@
-use crate::fen;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
