@@ -23,10 +23,10 @@ pub enum CastleType {
 }
 
 impl CastleType {
-    pub const BIT_BLACK_LONG   : u8 = 0b0001;
-    pub const BIT_BLACK_SHORT  : u8 = 0b0010;
-    pub const BIT_WHITE_LONG   : u8 = 0b0100;
-    pub const BIT_WHITE_SHORT  : u8 = 0b1000;
+    pub const BIT_BLACK_LONG: u8 = 0b0001;
+    pub const BIT_BLACK_SHORT: u8 = 0b0010;
+    pub const BIT_WHITE_LONG: u8 = 0b0100;
+    pub const BIT_WHITE_SHORT: u8 = 0b1000;
     pub fn get_bit(self) -> u8 {
         match self {
             Self::BlackLong => Self::BIT_BLACK_LONG,
@@ -36,4 +36,3 @@ impl CastleType {
         }
     }
 }
-

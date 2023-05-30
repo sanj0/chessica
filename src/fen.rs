@@ -100,8 +100,7 @@ fn parse_turn_field(field: &str) -> Result<u16, String> {
 
 fn parse_castle_field(field: Option<&str>) -> Result<u8, String> {
     if field.is_none() {
-        return Ok(
-            CastleType::BIT_BLACK_LONG
+        return Ok(CastleType::BIT_BLACK_LONG
             | CastleType::BIT_BLACK_SHORT
             | CastleType::BIT_WHITE_LONG
             | CastleType::BIT_WHITE_SHORT);
@@ -120,7 +119,7 @@ fn parse_castle_field(field: Option<&str>) -> Result<u8, String> {
                 result = result | $bit;
                 Ok(())
             }
-        }}
+        }};
     }
     for c in chars {
         match c {
@@ -128,7 +127,7 @@ fn parse_castle_field(field: Option<&str>) -> Result<u8, String> {
             FEN_BLACK_KING => add_once!(CastleType::BIT_BLACK_SHORT, c)?,
             FEN_WHITE_QUEEN => add_once!(CastleType::BIT_WHITE_LONG, c)?,
             FEN_WHITE_KING => add_once!(CastleType::BIT_WHITE_SHORT, c)?,
-            _ => return Err(format!("unexpected character '{c}' in castle rights field"))
+            _ => return Err(format!("unexpected character '{c}' in castle rights field")),
         }
     }
     Ok(result)
